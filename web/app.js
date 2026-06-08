@@ -3,6 +3,7 @@ const state = {
   selectedExample: null,
   selectedPreviewUrl: null,
   pollTimer: null,
+  renderedInstrumentLabel: null,
 };
 
 const fileInput = document.querySelector("#fileInput");
@@ -43,9 +44,14 @@ function updateRenderState() {
   renderButton.disabled = !(state.selectedFile || state.selectedExample);
 }
 
+function selectedInstrumentLabel() {
+  return instrumentSelect.options[instrumentSelect.selectedIndex].textContent;
+}
+
 function selectFile(file) {
   state.selectedFile = file;
   state.selectedExample = null;
+  state.renderedInstrumentLabel = null;
   document.querySelectorAll(".example-button").forEach((button) => {
     button.classList.remove("is-selected");
   });
@@ -59,6 +65,7 @@ function selectFile(file) {
 function selectExample(pdf, button) {
   state.selectedFile = null;
   state.selectedExample = pdf;
+  state.renderedInstrumentLabel = null;
   fileInput.value = "";
   document.querySelectorAll(".example-button").forEach((item) => {
     item.classList.toggle("is-selected", item === button);
@@ -112,6 +119,7 @@ async function renderPlayback() {
   audioPlayer.removeAttribute("src");
   setLog("");
   setStatus("Starting render...");
+  const instrumentLabel = selectedInstrumentLabel();
 
   const form = new FormData();
   form.set("instrument", instrumentSelect.value);
@@ -140,22 +148,27 @@ async function renderPlayback() {
     return;
   }
 
-  pollJob(data.jobId);
+  pollJob(data.jobId, instrumentLabel);
 }
 
-async function pollJob(jobId) {
+async function pollJob(jobId, instrumentLabel) {
   window.clearTimeout(state.pollTimer);
   const response = await fetch(`/api/jobs/${jobId}`);
   const job = await response.json();
 
   if (job.status === "queued" || job.status === "running") {
-    setStatus(job.status === "queued" ? "Queued..." : "Rendering playback...");
-    state.pollTimer = window.setTimeout(() => pollJob(jobId), 1200);
+    setStatus(
+      job.status === "queued"
+        ? `Queued: ${instrumentLabel}`
+        : `Rendering ${instrumentLabel} playback...`
+    );
+    state.pollTimer = window.setTimeout(() => pollJob(jobId, instrumentLabel), 1200);
     return;
   }
 
   if (job.status === "complete") {
-    setStatus(`Ready: ${job.label}`);
+    state.renderedInstrumentLabel = instrumentLabel;
+    setStatus(`Ready: ${job.label} as ${instrumentLabel}`);
     setLog(job.summary || "");
     audioPlayer.src = job.audioUrl;
     audioPlayer.style.display = "block";
@@ -195,6 +208,15 @@ dropZone.addEventListener("drop", (event) => {
 
 doctorButton.addEventListener("click", checkTools);
 renderButton.addEventListener("click", renderPlayback);
+instrumentSelect.addEventListener("change", () => {
+  if (
+    audioPlayer.style.display !== "none" &&
+    state.renderedInstrumentLabel &&
+    state.renderedInstrumentLabel !== selectedInstrumentLabel()
+  ) {
+    setStatus(`Selected ${selectedInstrumentLabel()}. Render again to update playback.`);
+  }
+});
 
 loadExamples().catch((error) => {
   setStatus("Failed to load PDF folder.");
