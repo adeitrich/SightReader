@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .instruments import program_for_instrument
 from .midi import set_single_instrument
+from .pdf import format_pdf_inspection, inspect_pdf
 from .pipeline import PlaybackOptions, run_playback
 from .tools import doctor_report
 
@@ -18,6 +19,12 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("doctor", help="Check local tool availability.")
+
+    inspect = subparsers.add_parser(
+        "inspect",
+        help="Inspect PDF metadata and embedded LilyPond source references.",
+    )
+    inspect.add_argument("input", nargs="+", type=Path, help="PDF file to inspect.")
 
     play = subparsers.add_parser("play", help="Render a score to audio.")
     play.add_argument("input", type=Path, help="PDF, MusicXML, MXL, or MIDI file.")
@@ -63,6 +70,15 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "doctor":
         print(doctor_report())
+        return 0
+
+    if args.command == "inspect":
+        try:
+            reports = [format_pdf_inspection(inspect_pdf(path)) for path in args.input]
+        except (OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print("\n\n".join(reports))
         return 0
 
     if args.command == "play":

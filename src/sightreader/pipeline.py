@@ -81,7 +81,7 @@ def run_playback(options: PlaybackOptions) -> PlaybackResult:
             "MusicXML to MIDI conversion",
             options.dry_run,
         )
-        commands.append([musescore, str(musicxml_path), "-o", str(midi_path)])
+        commands.append([musescore, "-o", str(midi_path), str(musicxml_path)])
 
     program = program_for_instrument(options.instrument)
     instrument_midi_path = out_dir / f"{stem}-{options.instrument}.mid"
@@ -89,7 +89,10 @@ def run_playback(options: PlaybackOptions) -> PlaybackResult:
 
     if not options.dry_run:
         for command in commands:
-            _run(command)
+            expected_output = midi_path if command[0] == tools.musescore else None
+            if expected_output:
+                expected_output.unlink(missing_ok=True)
+            _run(command, expected_output=expected_output)
         if not midi_path.exists():
             raise RuntimeError(f"expected MIDI output was not created: {midi_path}")
         set_single_instrument(midi_path, instrument_midi_path, program)
@@ -121,16 +124,17 @@ def run_playback(options: PlaybackOptions) -> PlaybackResult:
     render_command = [
         fluidsynth,
         "-ni",
-        soundfont,
-        str(instrument_midi_path),
         "-F",
         str(audio_path),
         "-r",
         "44100",
+        soundfont,
+        str(instrument_midi_path),
     ]
     commands.append(render_command)
 
     if not options.dry_run:
+        audio_path.unlink(missing_ok=True)
         _run(render_command)
         if not audio_path.exists():
             raise RuntimeError(f"expected audio output was not created: {audio_path}")
@@ -168,10 +172,12 @@ def _require_or_placeholder(
     raise RuntimeError(f"{name} is required for {purpose}, but was not found")
 
 
-def _run(command: list[str]) -> None:
+def _run(command: list[str], expected_output: Path | None = None) -> None:
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as exc:
+        if expected_output and expected_output.exists():
+            return
         quoted = " ".join(shlex.quote(part) for part in command)
         raise RuntimeError(f"command failed with exit code {exc.returncode}: {quoted}")
 

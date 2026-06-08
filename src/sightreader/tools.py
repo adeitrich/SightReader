@@ -17,10 +17,20 @@ class ToolSet:
 
 def find_tools() -> ToolSet:
     return ToolSet(
-        audiveris=_from_env_or_path("SIGHTREADER_AUDIVERIS", ["audiveris"]),
+        audiveris=_from_env_or_path(
+            "SIGHTREADER_AUDIVERIS",
+            ["audiveris"],
+            [
+                "/Applications/Audiveris.app/Contents/MacOS/Audiveris",
+            ],
+        ),
         musescore=_from_env_or_path(
             "SIGHTREADER_MUSESCORE",
             ["musescore", "musescore4", "mscore"],
+            [
+                "/Applications/MuseScore 4.app/Contents/MacOS/mscore",
+                "/Applications/MuseScore Studio.app/Contents/MacOS/mscore",
+            ],
         ),
         fluidsynth=_from_env_or_path("SIGHTREADER_FLUIDSYNTH", ["fluidsynth"]),
         soundfont=_find_soundfont(),
@@ -50,7 +60,9 @@ def doctor_report() -> str:
     return "\n".join(lines)
 
 
-def _from_env_or_path(env_name: str, candidates: list[str]) -> str | None:
+def _from_env_or_path(
+    env_name: str, candidates: list[str], fallback_paths: list[str] | None = None
+) -> str | None:
     env_value = os.environ.get(env_name)
     if env_value:
         expanded = str(Path(env_value).expanduser())
@@ -61,6 +73,10 @@ def _from_env_or_path(env_name: str, candidates: list[str]) -> str | None:
         if resolved:
             return resolved
 
+    for fallback in fallback_paths or []:
+        if Path(fallback).exists():
+            return fallback
+
     return None
 
 
@@ -70,6 +86,8 @@ def _find_soundfont() -> str | None:
         return str(Path(env_value).expanduser())
 
     candidates = [
+        "/Applications/MuseScore 4.app/Contents/Resources/sound/MS Basic.sf3",
+        "/Applications/MuseScore Studio.app/Contents/Resources/sound/MS Basic.sf3",
         "/usr/local/share/soundfonts/FluidR3_GM.sf2",
         "/opt/homebrew/share/soundfonts/FluidR3_GM.sf2",
         "/usr/share/sounds/sf2/FluidR3_GM.sf2",
