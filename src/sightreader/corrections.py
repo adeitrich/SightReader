@@ -62,14 +62,19 @@ def _apply_xml_bytes(xml_bytes: bytes, corrections: dict) -> tuple[bytes, list[s
     applied: list[str] = []
     for operation in corrections.get("operations", []):
         action = operation.get("action")
-        note = _find_note(root, operation.get("match", {}))
-        if note is None:
-            raise ValueError(f"correction did not match any note: {operation}")
+        if action == "replace_measure":
+            _replace_measure(root, operation)
+        else:
+            note = _find_note(root, operation.get("match", {}))
+            if note is None:
+                raise ValueError(f"correction did not match any note: {operation}")
 
         if action == "set_pitch":
             _set_pitch(note, operation)
         elif action == "add_tie":
             _add_tie(note, operation["type"])
+        elif action == "replace_measure":
+            pass
         else:
             raise ValueError(f"unknown correction action: {action}")
         applied.append(operation.get("description") or action)
@@ -98,6 +103,23 @@ def _find_note(root: ET.Element, match: dict) -> ET.Element | None:
     if len(matches) > 1:
         raise ValueError(f"correction matched multiple notes: {match}")
     return matches[0] if matches else None
+
+
+def _find_measure(root: ET.Element, measure_number: object) -> ET.Element | None:
+    expected = str(measure_number)
+    for measure in root.iter("measure"):
+        if measure.attrib.get("number") == expected:
+            return measure
+    return None
+
+
+def _replace_measure(root: ET.Element, operation: dict) -> None:
+    measure = _find_measure(root, operation["measure"])
+    if measure is None:
+        raise ValueError(f"correction did not match any measure: {operation}")
+
+    wrapper = ET.fromstring(f"<wrapper>{operation['xml']}</wrapper>")
+    measure[:] = list(wrapper)
 
 
 def _note_matches(note: ET.Element, match: dict) -> bool:

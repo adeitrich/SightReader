@@ -43,6 +43,25 @@
         "type": "whole"
       },
       "type": "stop"
+    },
+    {
+      "action": "add_tie",
+      "description": "Add tie start to printed bar 31 sustained C whole note",
+      "match": {
+        "measure": 21,
+        "default_x": 12,
+        "step": "C",
+        "octave": 5,
+        "duration": 8,
+        "type": "whole"
+      },
+      "type": "start"
+    },
+    {
+      "action": "replace_measure",
+      "description": "Replace printed bar 32 with corrected two-voice reading",
+      "measure": 22,
+      "xml": "\n      <note default-x=\"9\">\n        <pitch>\n          <step>F</step>\n          <alter>1</alter>\n          <octave>5</octave>\n        </pitch>\n        <duration>4</duration>\n        <voice>1</voice>\n        <type>half</type>\n        <accidental>sharp</accidental>\n        <stem default-y=\"27\">up</stem>\n        <notations>\n          <slur type=\"start\" number=\"1\" placement=\"above\" />\n        </notations>\n      </note>\n      <note default-x=\"72\">\n        <pitch>\n          <step>B</step>\n          <alter>-1</alter>\n          <octave>4</octave>\n        </pitch>\n        <duration>2</duration>\n        <voice>1</voice>\n        <type>quarter</type>\n        <accidental>flat</accidental>\n        <stem default-y=\"20\">up</stem>\n      </note>\n      <note default-x=\"111\">\n        <pitch>\n          <step>E</step>\n          <alter>-1</alter>\n          <octave>5</octave>\n        </pitch>\n        <duration>2</duration>\n        <tie type=\"start\" />\n        <voice>1</voice>\n        <type>quarter</type>\n        <accidental>flat</accidental>\n        <stem default-y=\"25\">up</stem>\n        <notations>\n          <slur type=\"stop\" number=\"1\" />\n          <tied type=\"start\" />\n        </notations>\n      </note>\n      <backup>\n        <duration>8</duration>\n      </backup>\n      <note default-x=\"10\">\n        <pitch>\n          <step>C</step>\n          <octave>5</octave>\n        </pitch>\n        <duration>8</duration>\n        <tie type=\"stop\" />\n        <tie type=\"start\" />\n        <voice>2</voice>\n        <type>whole</type>\n        <notations>\n          <tied type=\"stop\" />\n          <tied type=\"start\" orientation=\"under\" />\n        </notations>\n      </note>\n    "
     }
   ]
 }
