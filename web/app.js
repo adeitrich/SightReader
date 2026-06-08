@@ -101,6 +101,12 @@ async function checkTools() {
 }
 
 async function renderPlayback() {
+  if (!state.selectedFile && !state.selectedExample) {
+    setStatus("Choose a PDF first.");
+    updateRenderState();
+    return;
+  }
+
   renderButton.disabled = true;
   audioPlayer.style.display = "none";
   audioPlayer.removeAttribute("src");
@@ -115,10 +121,21 @@ async function renderPlayback() {
     form.set("existingPdf", state.selectedExample.path);
   }
 
-  const response = await fetch("/api/render", { method: "POST", body: form });
-  const data = await response.json();
+  let response;
+  let data;
+  try {
+    response = await fetch("/api/render", { method: "POST", body: form });
+    data = await response.json();
+  } catch (error) {
+    setStatus("Render failed to start.");
+    setLog(String(error));
+    updateRenderState();
+    return;
+  }
+
   if (!response.ok) {
     setStatus(data.error || "Render failed to start.");
+    setLog(data.error || "");
     updateRenderState();
     return;
   }

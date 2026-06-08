@@ -134,7 +134,7 @@ class SightReaderHandler(BaseHTTPRequestHandler):
             }
 
         upload = form["file"] if "file" in form else None
-        if not upload or not getattr(upload, "filename", ""):
+        if upload is None or not getattr(upload, "filename", ""):
             raise ValueError("choose a PDF file or bundled example")
 
         filename = _safe_filename(upload.filename)
