@@ -1,0 +1,48 @@
+{
+  "operations": [
+    {
+      "action": "add_tie",
+      "description": "Add tie start to measure 25 B-flat quarter note",
+      "match": {
+        "measure": 25,
+        "default_x": 92,
+        "step": "B",
+        "alter": "-1",
+        "octave": 4,
+        "duration": 2,
+        "type": "quarter"
+      },
+      "type": "start"
+    },
+    {
+      "action": "set_pitch",
+      "description": "Correct measure 25 tied B from natural to flat",
+      "match": {
+        "measure": 25,
+        "default_x": 134,
+        "step": "B",
+        "octave": 4,
+        "duration": 1,
+        "type": "eighth"
+      },
+      "step": "B",
+      "alter": -1,
+      "octave": 4,
+      "accidental": "flat"
+    },
+    {
+      "action": "add_tie",
+      "description": "Add tie stop to corrected measure 25 B-flat eighth note",
+      "match": {
+        "measure": 25,
+        "default_x": 134,
+        "step": "B",
+        "alter": "-1",
+        "octave": 4,
+        "duration": 1,
+        "type": "eighth"
+      },
+      "type": "stop"
+    }
+  ]
+}

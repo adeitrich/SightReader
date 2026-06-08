@@ -5,6 +5,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from .corrections import apply_score_corrections
 from .instruments import program_for_instrument
 from .midi import set_single_instrument
 from .tools import ToolSet, find_tools
@@ -41,6 +42,7 @@ def run_playback(options: PlaybackOptions) -> PlaybackResult:
     suffix = input_path.suffix.lower()
 
     commands: list[list[str]] = []
+    applied_corrections: list[str] = []
 
     if suffix == ".pdf":
         musicxml_path = out_dir / f"{stem}.mxl"
@@ -91,6 +93,10 @@ def run_playback(options: PlaybackOptions) -> PlaybackResult:
         for command in commands:
             expected_output = midi_path if command[0] == tools.musescore else None
             if expected_output:
+                if musicxml_path:
+                    corrections = apply_score_corrections(musicxml_path, stem)
+                    if corrections:
+                        applied_corrections.extend(corrections)
                 expected_output.unlink(missing_ok=True)
             _run(command, expected_output=expected_output)
         if not midi_path.exists():
@@ -152,7 +158,7 @@ def run_playback(options: PlaybackOptions) -> PlaybackResult:
             _run(play_command)
 
     return PlaybackResult(
-        summary=_format_summary(commands, audio_path, options.dry_run),
+        summary=_format_summary(commands, audio_path, options.dry_run, applied_corrections),
         audio_path=audio_path,
     )
 
@@ -182,8 +188,17 @@ def _run(command: list[str], expected_output: Path | None = None) -> None:
         raise RuntimeError(f"command failed with exit code {exc.returncode}: {quoted}")
 
 
-def _format_summary(commands: list[list[str]], audio_path: Path, dry_run: bool) -> str:
+def _format_summary(
+    commands: list[list[str]],
+    audio_path: Path,
+    dry_run: bool,
+    corrections: list[str] | None = None,
+) -> str:
     lines = ["Planned commands:" if dry_run else "Completed commands:"]
+    if corrections:
+        lines.append("Applied corrections:")
+        for correction in corrections:
+            lines.append(f"  {correction}")
     for command in commands:
         lines.append("  " + " ".join(shlex.quote(part) for part in command))
     lines.append(f"Audio output: {audio_path}")
