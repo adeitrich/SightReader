@@ -18,6 +18,7 @@ This repo contains an early command-line scaffold:
 - `sightreader doctor` checks for required local tools.
 - `sightreader inspect score.pdf` reports PDF metadata and LilyPond source references.
 - `sightreader play score.pdf` plans or runs the PDF-to-audio pipeline.
+- `sightreader web` runs a local drag-and-drop UI for PDF playback.
 - `sightreader play score.musicxml --instrument tuba --play` renders and plays a score when the required tools are installed.
 - `.agents/skills/sheet-playback/SKILL.md` lets Codex reuse the workflow in this repo.
 
@@ -78,6 +79,14 @@ For the current local test PDFs:
 sightreader play PDF/DirtyChompers_Trumpet.pdf --instrument trumpet --play
 sightreader play PDF/DirtyChompers_Guitar.pdf --instrument guitar --play
 ```
+
+Run the local web UI:
+
+```sh
+sightreader web
+```
+
+Then open `http://127.0.0.1:8765`.
 
 The trumpet chart is a better first OMR target. The guitar chart contains chord
 diagrams, slash notation, octave markings, and guitar-specific notation, so the

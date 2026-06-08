@@ -9,6 +9,7 @@ from .midi import set_single_instrument
 from .pdf import format_pdf_inspection, inspect_pdf
 from .pipeline import PlaybackOptions, run_playback
 from .tools import doctor_report
+from .web import run_server
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -19,6 +20,10 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("doctor", help="Check local tool availability.")
+
+    web = subparsers.add_parser("web", help="Run the local drag-and-drop web UI.")
+    web.add_argument("--host", default="127.0.0.1", help="Host interface to bind.")
+    web.add_argument("--port", default=8765, type=int, help="Port to bind.")
 
     inspect = subparsers.add_parser(
         "inspect",
@@ -70,6 +75,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "doctor":
         print(doctor_report())
+        return 0
+
+    if args.command == "web":
+        run_server(host=args.host, port=args.port)
         return 0
 
     if args.command == "inspect":

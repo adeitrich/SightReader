@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SightReader</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace">
+        <div class="panel source-panel">
+          <header class="panel-header">
+            <div>
+              <h1>SightReader</h1>
+              <p>Open a sheet music PDF, choose an instrument, and render playback.</p>
+            </div>
+            <button id="doctorButton" class="ghost-button" type="button">Check Tools</button>
+          </header>
+
+          <div id="dropZone" class="drop-zone" tabindex="0">
+            <input id="fileInput" type="file" accept="application/pdf,.pdf" />
+            <div class="drop-copy">
+              <strong>Drop PDF</strong>
+              <span>or select a file from disk</span>
+            </div>
+          </div>
+
+          <div class="examples">
+            <div class="section-title">PDF Folder</div>
+            <div id="exampleList" class="example-list"></div>
+          </div>
+
+          <label class="field">
+            <span>Instrument</span>
+            <select id="instrumentSelect">
+              <option value="trumpet">Trumpet</option>
+              <option value="tenor-sax">Tenor sax</option>
+              <option value="alto-sax">Alto sax</option>
+              <option value="tuba">Tuba</option>
+              <option value="guitar">Guitar</option>
+              <option value="piano">Piano</option>
+              <option value="clarinet">Clarinet</option>
+              <option value="flute">Flute</option>
+            </select>
+          </label>
+
+          <button id="renderButton" class="primary-button" type="button" disabled>
+            Render Playback
+          </button>
+        </div>
+
+        <div class="panel preview-panel">
+          <div class="section-title">Score Preview</div>
+          <div id="previewEmpty" class="empty-preview">Choose a PDF to preview it here.</div>
+          <iframe id="pdfPreview" title="Selected PDF preview"></iframe>
+        </div>
+      </section>
+
+      <section class="playback-band">
+        <div class="playback-inner">
+          <div>
+            <div class="section-title">Playback</div>
+            <div id="statusText" class="status-text">Waiting for a PDF.</div>
+          </div>
+          <audio id="audioPlayer" controls></audio>
+        </div>
+        <pre id="logOutput"></pre>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
