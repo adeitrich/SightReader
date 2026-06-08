@@ -14,6 +14,23 @@ def _read_vlq(data: bytes, offset: int) -> tuple[int, int]:
             return value, offset
 
 
+def _write_vlq(value: int) -> bytes:
+    buffer = value & 0x7F
+    value >>= 7
+    while value:
+        buffer <<= 8
+        buffer |= (value & 0x7F) | 0x80
+        value >>= 7
+
+    output = bytearray()
+    while True:
+        output.append(buffer & 0xFF)
+        if buffer & 0x80:
+            buffer >>= 8
+        else:
+            return bytes(output)
+
+
 def _skip_event(data: bytes, offset: int, status: int) -> tuple[int, int]:
     if status == 0xFF:
         offset += 1
@@ -55,12 +72,77 @@ def _channel_used(track: bytes, channel: int) -> bool:
     return False
 
 
-def set_single_instrument(input_path: Path, output_path: Path, program: int) -> None:
-    """Insert program-change events at the start of tracks that use MIDI channels.
+def _rewrite_track_programs(track: bytes, program: int) -> bytes:
+    output = bytearray()
+    prefix = bytearray()
+    for channel in range(16):
+        if channel == 9:
+            continue
+        if _channel_used(track, channel):
+            prefix.extend((0x00, 0xC0 | channel, program))
 
-    This is intentionally conservative. It does not remove existing program
-    changes later in the track, so authored instrument changes can still win.
-    """
+    offset = 0
+    running_status: int | None = None
+    pending_delta = 0
+
+    while offset < len(track):
+        delta, offset = _read_vlq(track, offset)
+        pending_delta += delta
+        if offset >= len(track):
+            break
+
+        status = track[offset]
+        if status & 0x80:
+            offset += 1
+            running_status = status
+        elif running_status is not None:
+            status = running_status
+        else:
+            raise ValueError("MIDI event is missing running status")
+
+        if status == 0xFF:
+            meta_type = track[offset]
+            offset += 1
+            length, offset = _read_vlq(track, offset)
+            payload = track[offset : offset + length]
+            offset += length
+            output.extend(_write_vlq(pending_delta))
+            output.extend((status, meta_type))
+            output.extend(_write_vlq(length))
+            output.extend(payload)
+            pending_delta = 0
+            continue
+
+        if status in (0xF0, 0xF7):
+            length, offset = _read_vlq(track, offset)
+            payload = track[offset : offset + length]
+            offset += length
+            output.extend(_write_vlq(pending_delta))
+            output.append(status)
+            output.extend(_write_vlq(length))
+            output.extend(payload)
+            pending_delta = 0
+            continue
+
+        event_type = status & 0xF0
+        channel = status & 0x0F
+        data_len = 1 if event_type in (0xC0, 0xD0) else 2
+        payload = track[offset : offset + data_len]
+        offset += data_len
+
+        if event_type == 0xC0 and channel != 9:
+            continue
+
+        output.extend(_write_vlq(pending_delta))
+        output.append(status)
+        output.extend(payload)
+        pending_delta = 0
+
+    return bytes(prefix) + bytes(output)
+
+
+def set_single_instrument(input_path: Path, output_path: Path, program: int) -> None:
+    """Write a MIDI copy that forces non-drum channels to one GM program."""
 
     data = input_path.read_bytes()
     if data[:4] != b"MThd":
@@ -79,14 +161,7 @@ def set_single_instrument(input_path: Path, output_path: Path, program: int) -> 
         track = data[track_start : track_start + length]
         cursor = track_start + length
 
-        prefix = bytearray()
-        for channel in range(16):
-            if channel == 9:
-                continue
-            if _channel_used(track, channel):
-                prefix.extend((0x00, 0xC0 | channel, program))
-
-        new_track = bytes(prefix) + track
+        new_track = _rewrite_track_programs(track, program)
         output.extend(b"MTrk")
         output.extend(struct.pack(">I", len(new_track)))
         output.extend(new_track)
